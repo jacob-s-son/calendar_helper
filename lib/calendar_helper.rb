@@ -96,7 +96,8 @@ module CalendarHelper
       :next_month_text     => nil,
       :month_header        => true,
       :calendar_title      => month_names[options[:month]],
-      :summary             => "Calendar for #{month_names[options[:month]]} #{options[:year]}"
+      :summary             => "Calendar for #{month_names[options[:month]]} #{options[:year]}",
+      :month_header_position => :top
     }
     options = defaults.merge options
 
@@ -117,18 +118,7 @@ module CalendarHelper
     cal = %(<table id="#{options[:table_id]}" class="#{options[:table_class]}" border="0" cellspacing="0" cellpadding="0" summary="#{options[:summary]}">)
     cal << %(<thead>)
 
-    if (options[:month_header])
-      cal << %(<tr>)
-      if options[:previous_month_text] or options[:next_month_text]
-        cal << %(<th colspan="2">#{options[:previous_month_text]}</th>)
-        colspan=3
-      else
-        colspan=7
-      end
-      cal << %(<th colspan="#{colspan}" class="#{options[:month_name_class]}">#{options[:calendar_title]}</th>)
-      cal << %(<th colspan="2">#{options[:next_month_text]}</th>) if options[:next_month_text]
-      cal << %(</tr>)
-    end
+    cal = month_header cal, options if options[:month_header] && options[:month_header_position] == :top
 
     cal << %(<tr class="#{options[:day_name_class]}">)
 
@@ -164,7 +154,10 @@ module CalendarHelper
       cal << generate_other_month_cell(d, options)
     end unless last.wday == last_weekday
 
-    cal << "</tr></tbody></table>"
+    cal << "</tr></tbody>"
+    cal = month_header cal, options if options[:month_header] && options[:month_header_position] == :bottom
+    cal << "</table>"
+    
     cal.respond_to?(:html_safe) ? cal.html_safe : cal
   end
 
@@ -226,6 +219,25 @@ module CalendarHelper
 
   def weekend?(date)
     [0, 6].include?(date.wday)
+  end
+  
+  def month_header cal, options
+    cal << %(<tfoot>) if options[:month_header_position] == :bottom
+    cell = options[:month_header_position] == :bottom ? "td" : "th"
+    
+    cal << %(<tr>)
+    if options[:previous_month_text] or options[:next_month_text]
+      cal << %(<#{cell} colspan="2">#{options[:previous_month_text]}</#{cell}>)
+      colspan=3
+    else
+      colspan=7
+    end
+    cal << %(<#{cell} colspan="#{colspan}" class="#{options[:month_name_class]}">#{options[:calendar_title]}</#{cell}>)
+    cal << %(<#{cell} colspan="2">#{options[:next_month_text]}</#{cell}>) if options[:next_month_text]
+    cal << %(</tr>)
+    cal << %(</tfoot>) if options[:month_header_position] == :bottom
+    
+    cal
   end
 
   class Engine < Rails::Engine # :nodoc:
